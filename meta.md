@@ -7,7 +7,7 @@ clipper
 - tag
 - folder
 
-### Bản 1
+# Bản 1
 clipper
 - save
 - display saved successfully
@@ -17,9 +17,10 @@ editor
 -------------------
 -------------------
 
-# Req
+### Req
 clipper
-- get web address
+- press shortcut -> open popup -> click ok -> save url -> notif done
 
 editor 
-- whenever opened, get localstorage
+    logic
+    - whenever opened, get localstorage

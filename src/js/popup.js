@@ -6,17 +6,25 @@ async function readCurrentSiteInfo() {
     })
 }
 
+function savePageInfo(url, title) {
+    chrome.storage.local.set({ [url]: title })
+}
+
 let tabUrl, tabTitle;
 async function init() {
     let tabInfo = await readCurrentSiteInfo();
     tabUrl = tabInfo[0];
     tabTitle = tabInfo[1];
-
-    obj = {};
-
-    obj[tabUrl] = tabTitle;
-
-    chrome.storage.local.set(obj);
 }
 
-window.onload = init();
+const saveButton = document.getElementById("save");
+saveButton.addEventListener("click", () => {
+    savePageInfo(tabUrl, tabTitle);
+});
+
+const openEditorButton = document.getElementById("open-editor");
+openEditorButton.addEventListener("click", () => {
+    chrome.tabs.create({ url: "src/html/editor.html" });
+})
+
+init();
