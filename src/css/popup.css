@@ -1,0 +1,15 @@
+.container {
+    width: 480px;
+}
+
+#site-thumbnail {
+    width: 64px;
+    height: auto;
+}
+
+textarea {
+    outline: none;
+    resize: none;
+    height: auto;
+    width: 75%;
+}

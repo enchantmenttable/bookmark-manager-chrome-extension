@@ -1,15 +1,3 @@
-// async function readLocalStorage(key) {
-//     return new Promise((resolve, reject) => {
-//         chrome.storage.local.get(key, (data) => {
-//             if (data[key] === undefined) {
-//                 reject(undefined);
-//             } else {
-//                 resolve(data[key])
-//             }
-//         })
-//     })
-// }
-
 async function readAllLocalStorage() {
     return new Promise((resolve, reject) => {
         chrome.storage.local.get(null, (data) => {
@@ -22,16 +10,24 @@ async function readAllLocalStorage() {
     })
 }
 
-function createListing(rawListing, listingContainter) {
-    for (const [url, title] of Object.entries(rawListing)) {
-        listingContainter.insertAdjacentHTML("beforeend", `<li>${title}: ${url}</li>`)
+function displayListings(rawData) {
+    for (const [url, data] of Object.entries(rawData)) {
+        if (url.indexOf("://") === -1) {
+            listingContainter.insertAdjacentHTML("beforeend", `<li><a href="https://${url}" target="_blank" rel="noreferer noopener"></a></li>`);
+        } else {
+            listingContainter.insertAdjacentHTML("beforeend", `<li><a href="${url}" target="_blank" rel="noreferer noopener"></a></li>`);
+        }
+
+        listingContainter.lastChild.querySelector("a").textContent = data["title"];
+        listingContainter.lastChild.insertAdjacentHTML("beforeend", `<span>${data["dateAdded"]}</span>`);
     }
 }
 
+const listingContainter = document.getElementById("listing");
+
 async function init() {
-    const rawListing = await readAllLocalStorage();
-    const listingContainter = document.getElementById("listing");
-    createListing(rawListing, listingContainter);
+    const rawData = await readAllLocalStorage();
+    displayListings(rawData);
 }
 
 init();
