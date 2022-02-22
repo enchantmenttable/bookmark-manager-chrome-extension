@@ -1,0 +1,15 @@
+.container {
+    border: 1px solid black;
+}
+
+#navigation {
+    border: 1px solid black;
+}
+
+#card-listing {
+    border: 1px solid black;
+}
+
+.card {
+    width: 400px;
+}

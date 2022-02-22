@@ -1,0 +1,14 @@
+<head>
+    <title>Test</title>
+</head>
+
+<script src="../vendor/page-metadata-parser.bundle.js"></script>
+
+<script>
+
+    const metadata = metadataparser.getMetadata(window.document, window.location);
+
+    console.log("The page's title is ", metadata.title);
+    console.log(metadata);
+
+</script>

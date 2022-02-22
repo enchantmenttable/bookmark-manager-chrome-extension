@@ -71,30 +71,14 @@ popupUrl.addEventListener("click", () => {
 
 //// -- //
 
-function getPageInfo() {
-    let metadata = {
-        url: document.URL,
-        title: document.title,
-        thumbnail: document.head.querySelector("[property='og:image']").content,
-        description: document.head.querySelector("[property='og:description']").content
-    };
+(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    return metadata
-}
-
-async function init() {
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    // https://developer.chrome.com/docs/extensions/reference/scripting/
     chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: getPageInfo,
-    },
-        (result) => {
-            const metadata = result[0].result;
-            displaySiteInfo(metadata["url"], metadata["title"], metadata["thumbnail"]);
-            popupTitle.style.height = `${popupTitle.scrollHeight}px`;
-        });
-}
-
-init();
+        files: ["src/vendor/page-metadata-parser.bundle.js"]
+    }, (result) => {
+        const metadata = result[0].result;
+        displaySiteInfo(metadata.url, metadata.title, metadata.image);
+    })
+})();
