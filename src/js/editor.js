@@ -1,3 +1,5 @@
+import * as utils from "./utilities.js";
+
 async function readAllLocalStorage() {
     return new Promise((resolve, reject) => {
         chrome.storage.local.get(null, (data) => {
@@ -10,52 +12,237 @@ async function readAllLocalStorage() {
     })
 }
 
-// function displayListings(rawData) {
-//     for (const [url, data] of Object.entries(rawData)) {
-//         if (url.indexOf("://") === -1) {
-//             listingContainter.insertAdjacentHTML("beforeend", `<li><a href="https://${url}" target="_blank" rel="noreferer noopener"></a></li>`);
-//         } else {
-//             listingContainter.insertAdjacentHTML("beforeend", `<li><a href="${url}" target="_blank" rel="noreferer noopener"></a></li>`);
-//         }
 
-//         listingContainter.lastChild.querySelector("a").textContent = data["title"];
-//         listingContainter.lastChild.insertAdjacentHTML("beforeend", `<span>${data["dateAdded"]}</span>`);
-//     }
-// }
+async function displayListings(rawData) {
+    const listingContainter = document.getElementById("card-listing");
 
-function displayListings(rawData) {
+    const cardTemplate = await utils.getTemplate("../html/templates/card.html");
+
     for (const [url, data] of Object.entries(rawData)) {
+        let href;
         if (url.indexOf("://") === -1) {
-            let href = `https://${url}`;
+            href = `https://${url}`;
         } else {
-            let href = url;
+            href = url;
         }
-        listingContainter.insertAdjacentHTML("beforeend",
-            `<div class="card">
-        <div class="row no-gutters">
-            <div class="col-auto">
-                <img src="${data.thumbnail}" alt="" class="img-fluid" style="width: 64px;">
-            </div>
-            <div class="col">
-                <div class="card-block px-2">
-                    <h6 class="card-title">${data.title}</h6>
-                    <p class="card-text">Description</p>
-                </div>
-            </div>
-        </div>
-        <div class="card-footer w-100">
-            ${data.dateAdded}
-        </div>
-    </div>
-        `)
+
+        const displayDomain = utils.getDomain(url);
+
+        listingContainter.insertAdjacentHTML("beforeend", cardTemplate);
+
+        const lastCard = listingContainter.lastChild;
+        const cardElems = utils.getCardElems(lastCard);
+
+        cardElems.thumbnail.src = data.thumbnail;
+        cardElems.urlInput.value = href;
+        cardElems.domainDisplayText.textContent = displayDomain;
+        cardElems.dateAdded.textContent = data.dateAdded;
+        cardElems.mainLink.href = href;
+
+        cardElems.title.textContent = data.title;
+        cardElems.title.style.height = `${cardElems.title.scrollHeight + 4}px`;
+
+        cardElems.description.textContent = data.description;
+        if (cardElems.description.textContent === "") {
+            cardElems.description.style.display = "none"
+        } else {
+            cardElems.description.style.height = `${cardElems.description.scrollHeight + 4}px`;
+        };
+
+        utils.saveDataPrevValueAttr(cardElems);
     }
 }
 
-const listingContainter = document.getElementById("card-listing");
+// setup card clicking behavior
 
-async function init() {
-    const rawData = await readAllLocalStorage();
-    displayListings(rawData);
+function handleClick() {
+    const isTextSelected = window.getSelection().toString();
+    const mainLink = this.querySelector(".card-main-link");
+
+    if (!isTextSelected) {
+        mainLink.click();
+    }
+};
+
+function setupCardUrlClickable() {
+    const cards = document.querySelectorAll(".card");
+    for (const card of cards) {
+        card.addEventListener("click", handleClick);
+
+        const clickableElems = Array.from(card.querySelectorAll(".clickable"));
+        clickableElems.forEach((elem) => {
+            elem.addEventListener("click", (e) => e.stopPropagation())
+        });
+    }
 }
 
-init();
+////
+
+// card switch state
+
+function switchToReadonlyMode(card) {
+    card.addEventListener("click", handleClick);
+
+    const cardElems = utils.getCardElems(card);
+
+    for (const elem of [cardElems.title, cardElems.description]) {
+        elem.classList.remove("edit-mode");
+        elem.classList.add("readonly-mode");
+        elem.readOnly = true;
+    }
+
+    cardElems.urlInput.style.display = "none";
+
+    cardElems.domainDisplayText.style.display = "inline-block";
+
+    cardElems.editButton.style.display = "inline-block";
+    cardElems.deleteButton.style.display = "inline-block";
+
+    cardElems.cancelButton.style.display = "none";
+    cardElems.saveButton.style.display = "none";
+}
+
+function switchToEditMode(card) {
+    card.removeEventListener("click", handleClick);
+
+    const cardTextAreas = card.querySelectorAll("textarea");
+    for (const elem of cardTextAreas) {
+        elem.classList.add("edit-mode");
+        elem.classList.remove("readonly-mode");
+        elem.readOnly = false;
+    };
+
+    const cardInput = card.querySelector(".card-url-input");
+    cardInput.style.display = "inline-block";
+
+    const carDomainDisplayText = card.querySelector(".card-domain-display-text");
+    carDomainDisplayText.style.display = "none";
+
+
+    const cardDeleteButton = card.querySelector(".card-delete-button");
+    const cardEditButton = card.querySelector(".card-edit-button");
+    cardDeleteButton.style.display = "none";
+    cardEditButton.style.display = "none";
+
+    const cardCancelButton = card.querySelector(".card-cancel-button");
+    const cardSaveButton = card.querySelector(".card-save-button");
+    cardCancelButton.style.display = "inline-block";
+    cardSaveButton.style.display = "inline-block";
+}
+
+////
+
+// delete button
+
+function handleDeleteCard() {
+    const card = this.parentElement.parentElement;
+    const cardUrl = card.querySelector(".card-main-link").href;
+    chrome.storage.local.remove(cardUrl);
+    card.remove();
+}
+
+function setupDeleteButton() {
+    const deleteButtons = document.querySelectorAll(".card-delete-button");
+    for (const elem of deleteButtons) {
+        elem.addEventListener("click", handleDeleteCard);
+    };
+}
+
+////
+
+// edit button
+
+function handleEditButton() {
+    const card = this.parentElement.parentElement;
+
+    switchToEditMode(card);
+}
+
+function setupEditButton() {
+    const editButtons = document.querySelectorAll(".card-edit-button");
+    for (const elem of editButtons) {
+        elem.addEventListener("click", handleEditButton);
+    };
+}
+////
+
+// cancel button
+
+function handleCancelButton() {
+    const card = this.parentElement.parentElement;
+
+    const cardElems = utils.getCardElems(card);
+
+    cardElems.title.value = cardElems.title.dataset.prevValue;
+    cardElems.description.value = cardElems.description.dataset.prevValue;
+    cardElems.urlInput.value = cardElems.urlInput.dataset.prevValue;
+
+    switchToReadonlyMode(card);
+}
+
+function setupCancelButton() {
+    const cancelButtons = document.querySelectorAll(".card-cancel-button");
+    for (const elem of cancelButtons) {
+        elem.addEventListener("click", handleCancelButton);
+    };
+}
+
+////
+
+// save button
+
+function handleSaveButton() {
+    const card = this.parentElement.parentElement;
+
+    const cardElems = utils.getCardElems(card);
+
+    const dateAdded = Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date());
+
+    chrome.storage.local.remove(cardElems.mainLink.href);
+
+    let fullUrl;
+    if (cardElems.urlInput.value.indexOf("://") === -1) {
+        fullUrl = `https://${cardElems.urlInput.value}`;
+    } else {
+        fullUrl = cardElems.urlInput.value;
+    };
+
+    chrome.storage.local.set({
+        [fullUrl]: {
+            title: cardElems.title.value,
+            description: cardElems.description.value,
+            thumbnail: cardElems.thumbnail.src,
+            dateAdded: dateAdded
+        }
+    });
+
+    cardElems.mainLink.href = fullUrl;
+    cardElems.title.textContent = cardElems.title.value;
+    cardElems.description.textContent = cardElems.description.value;
+    cardElems.dateAdded.textContent = dateAdded;
+    cardElems.domainDisplayText.textContent = utils.getDomain(fullUrl);
+
+    utils.saveDataPrevValueAttr(cardElems);
+
+    switchToReadonlyMode(card);
+}
+
+function setupSaveButton() {
+    const saveButtons = document.querySelectorAll(".card-save-button");
+    for (const elem of saveButtons) {
+        elem.addEventListener("click", handleSaveButton);
+    };
+}
+
+////
+
+(async () => {
+    const rawData = await readAllLocalStorage();
+    console.log(rawData);
+    await displayListings(rawData);
+    setupCardUrlClickable();
+    setupDeleteButton();
+    setupEditButton();
+    setupCancelButton();
+    setupSaveButton();
+})();

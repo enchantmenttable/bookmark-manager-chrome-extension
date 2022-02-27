@@ -1,3 +1,3 @@
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.clear(() => { });
-})
+// chrome.runtime.onInstalled.addListener(() => {
+//     chrome.storage.local.clear(() => { });
+// })
