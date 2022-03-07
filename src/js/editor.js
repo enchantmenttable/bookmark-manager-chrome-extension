@@ -12,13 +12,17 @@ async function readAllLocalStorage() {
     })
 }
 
-
 async function displayListings(rawData) {
     const listingContainter = document.getElementById("card-listing");
+    const sidebar = document.getElementById("sidebar");
+
+    const sidebarTemplate = await utils.getTemplate("../html/templates/sidebar.html");
 
     const cardTemplate = await utils.getTemplate("../html/templates/card.html");
 
     for (const [url, data] of Object.entries(rawData)) {
+        if (url === "folders") continue;
+
         let href;
         if (url.indexOf("://") === -1) {
             href = `https://${url}`;
@@ -36,6 +40,7 @@ async function displayListings(rawData) {
         cardElems.thumbnail.src = data.thumbnail;
         cardElems.urlInput.value = href;
         cardElems.domainDisplayText.textContent = displayDomain;
+        cardElems.folderDisplayText.textContent = data.folder;
         cardElems.dateAdded.textContent = data.dateAdded;
         cardElems.mainLink.href = href;
 
@@ -76,7 +81,7 @@ function setupCardUrlClickable() {
     }
 }
 
-////
+
 
 // card switch state
 
@@ -105,18 +110,17 @@ function switchToReadonlyMode(card) {
 function switchToEditMode(card) {
     card.removeEventListener("click", handleClick);
 
-    const cardTextAreas = card.querySelectorAll("textarea");
-    for (const elem of cardTextAreas) {
+    const cardElems = utils.getCardElems(card);
+
+    for (const elem of [cardElems.title, cardElems.description]) {
         elem.classList.add("edit-mode");
         elem.classList.remove("readonly-mode");
         elem.readOnly = false;
     };
 
-    const cardInput = card.querySelector(".card-url-input");
-    cardInput.style.display = "inline-block";
+    cardElems.urlInput.style.display = "inline-block";
 
-    const carDomainDisplayText = card.querySelector(".card-domain-display-text");
-    carDomainDisplayText.style.display = "none";
+    cardElems.domainDisplayText.style.display = "none";
 
 
     const cardDeleteButton = card.querySelector(".card-delete-button");
@@ -124,13 +128,10 @@ function switchToEditMode(card) {
     cardDeleteButton.style.display = "none";
     cardEditButton.style.display = "none";
 
-    const cardCancelButton = card.querySelector(".card-cancel-button");
-    const cardSaveButton = card.querySelector(".card-save-button");
-    cardCancelButton.style.display = "inline-block";
-    cardSaveButton.style.display = "inline-block";
+    cardElems.cancelButton.style.display = "inline-block";
+    cardElems.saveButton.style.display = "inline-block";
 }
 
-////
 
 // delete button
 
@@ -148,7 +149,6 @@ function setupDeleteButton() {
     };
 }
 
-////
 
 // edit button
 
@@ -164,7 +164,7 @@ function setupEditButton() {
         elem.addEventListener("click", handleEditButton);
     };
 }
-////
+
 
 // cancel button
 
@@ -187,7 +187,7 @@ function setupCancelButton() {
     };
 }
 
-////
+
 
 // save button
 
@@ -234,7 +234,7 @@ function setupSaveButton() {
     };
 }
 
-////
+
 
 (async () => {
     const rawData = await readAllLocalStorage();

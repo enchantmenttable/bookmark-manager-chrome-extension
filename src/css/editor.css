@@ -101,6 +101,14 @@ textarea {
     display: inline-block;
 }
 
+.card-folder-display-text {
+    display: inline-block;
+}
+
+.card-folder-dropdown {
+    display: none;
+}
+
 .card-date-added {
     display: inline-block;
 }

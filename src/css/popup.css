@@ -2,6 +2,10 @@
     width: 480px;
 }
 
+.pointer-cursor {
+    cursor: pointer;
+}
+
 #site-thumbnail {
     width: 64px;
     height: auto;
