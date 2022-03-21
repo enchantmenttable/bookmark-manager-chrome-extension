@@ -1,19 +1,30 @@
-import {readIndexedDB} from "./utilities.js";
+import { readValueByIndex } from "./utilities.js";
+import { readAllObjectStore } from "./utilities.js";
+import { putItem } from "./utilities.js";
+
+const mainPanel = document.getElementById("main-panel");
 
 const popupThumbnail = document.getElementById("site-thumbnail");
 const popupTitle = document.getElementById("site-title");
 const popupUrl = document.getElementById("site-url");
 const popupDescription = document.getElementById("site-description");
-const popupFolderDropdown = document.getElementById("folder-dropdown");
 
+const folderSelectButton = document.getElementById("folder-select");
 const openEditorButton = document.getElementById("open-editor");
 const saveButton = document.getElementById("save");
 const cancelButton = document.getElementById("cancel");
+
 const textareas = document.getElementsByTagName("textarea");
-const folderDropdown = document.getElementById("folder-dropdown");
+
+const folderPanel = document.getElementById("folder-panel");
+const folderListing = document.getElementById("folder-listing");
+const backToMainButton = document.getElementById("back-to-main");
+const addFolderButton = document.getElementById("add-folder");
+const folderNameInput = document.getElementById("folder-name-input");
+const folderDuplicateAlert = document.getElementById("folder-duplicate-alert");
+
 
 // text area
-
 function expandOnInput() {
     this.style.height = "auto";
     this.style.height = `${this.scrollHeight}px`;
@@ -21,6 +32,7 @@ function expandOnInput() {
 
 function expandOnClick() {
     this.style.height = `${this.scrollHeight}px`;
+    this.style.overflow = "hidden"
 }
 
 function preventNewline(e) {
@@ -38,64 +50,70 @@ for (const elem of [popupDescription, popupUrl]) {
     elem.addEventListener("click", expandOnClick, { once: true });
 }
 
+popupTitle.focus();
 
-// folder dropdown
-async function populateFolderOptions() {
-    const folders = await readIndexedDB("folders", true);
-    folderDropdown.textContent = folders;
+// folder select
+folderSelectButton.onclick = function () {
+    folderPanel.style.display = "block";
+    mainPanel.style.display = "none";
+};
+
+backToMainButton.onclick = function () {
+    folderPanel.style.display = "none";
+    mainPanel.style.display = "block";
+};
+
+async function setupFolderButton() {
+    const lastSelectedFolderQuery = await readValueByIndex("metadata", "name", "lastSelectedFolder");
+
+
+    folderSelectButton.querySelector("span").textContent = lastSelectedFolderQuery[0].value;
 }
 
 
 // my bookmarks
-openEditorButton.addEventListener("click", () => {
+openEditorButton.onclick = function () {
     chrome.tabs.create({ url: "src/html/editor.html" });
-})
+};
 
 
 // save 
-
-function saveSuccessDisplay() {
-    saveButton.textContent = "Saved";
-    saveButton.disabled = true;
-}
-
-function saveSiteInfo(url, title, thumbnail, description, folder, dateAdded) {
+saveButton.onclick = function () {
+    const dateAdded = Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date());
+    const folderName = folderSelectButton.querySelector("span").replace(/^\s+|\s+$/g, '');
+    const data = {
+        url: popupUrl.value,
+        title: popupTitle.value,
+        thumbnail: popupThumbnail.src,
+        description: popupDescription.value,
+        dateAdded: dateAdded,
+        folder: folderName
+    };
     const request = indexedDB.open("mainDatabase", 1);
 
     request.onsuccess = function () {
+
         const db = request.result;
 
-        const transaction = db.transaction("bookmarks", "readwrite");
+        const bookmarkStore = db.transaction("bookmarks", "readwrite").objectStore("bookmarks");
 
-        const objectStore = transaction.objectStore("bookmarks");
+        bookmarkStore.put(data);
+    };
 
-        objectStore.put()
-    }
+    putItem("metadata", { name: "lastSelectedFolder", value: folderName });
 
-    chrome.storage.local.set({
-        [url]: {
-            title: title,
-            thumbnail: thumbnail,
-            description: description,
-            dateAdded: dateAdded,
-            folder: folder
-        }
-    }, () => {
-        saveSuccessDisplay();
-    })
-}
-
-saveButton.addEventListener("click", () => {
-    const dateAdded = Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date());
-
-    saveSiteInfo(popupUrl.value, popupTitle.value, popupThumbnail.src, popupDescription.value, popupFolderDropdown.value, dateAdded);
-});
+    saveButton.textContent = "Saved";
+    saveButton.disabled = true;
+    setTimeout(() => {
+        window.close();
+    }, 300);
+};
 
 
 // Cancel
-cancelButton.addEventListener("click", () => {
+cancelButton.onclick = function () {
     window.close();
-})
+}
 
 
 // display info
@@ -110,12 +128,79 @@ function displaySiteInfo(url, title, thumbnail, description) {
     popupDescription.textContent = description;
 }
 
+//folder panel
+
+async function setupFolderListing() {
+    const folders = await readAllObjectStore("folders");
+    for (const folder of folders) {
+        folderListing.insertAdjacentHTML("beforeend",
+            `<div class="folder-item">
+                <i class="bi bi-folder-fill"></i>
+                <span class="folder-item-name">${folder.name}</span>
+            </div>`);
+
+        const lastFolderItem = folderListing.lastChild;
+        lastFolderItem.onclick = selectFolder;
+    }
+}
+
+function selectFolder() {
+    folderSelectButton.querySelector("span").textContent = this.querySelector(".folder-item-name").textContent;
+    folderPanel.style.display = "none";
+    mainPanel.style.display = "block";
+}
+
+addFolderButton.onclick = function () {
+    addFolderButton.style.display = "none";
+    folderNameInput.style.display = "inline-block";
+    folderNameInput.focus();
+};
+
+folderNameInput.onkeydown = function (e) {
+    const newFolder = folderNameInput.value.replace(/^\s+|\s+$/g, '');
+    const currentFolderItems = document.querySelectorAll(".folder-item-name");
+
+    let currentFolderNames = [];
+    for (const item of currentFolderItems) {
+        currentFolderNames.push(item.textContent);
+    }
+
+    if (e.key === "Enter") {
+        if (currentFolderNames.includes(newFolder)) {
+            folderDuplicateAlert.style.display = "inline-block";
+        } else {
+            folderNameInput.style.display = "none";
+            addFolderButton.style.display = "inline-block";
+            folderDuplicateAlert.style.display = "none";
+
+            folderListing.insertAdjacentHTML("afterbegin",
+                `<div class="folder-item">
+                <i class="bi bi-folder-fill"></i>
+                <span class="folder-item-name">${newFolder}</span>
+            </div>`);
+
+            const newFolderItem = folderListing.firstChild;
+
+            putItem("folders", { name: newFolder });
+
+            newFolderItem.onclick = selectFolder;
+
+            folderNameInput.value = "";
+        }
+    } else if (e.key === "Escape") {
+        e.preventDefault();
+
+        folderNameInput.style.display = "none";
+        addFolderButton.style.display = "inline-block";
+        folderDuplicateAlert.style.display = "none";
+
+        folderNameInput.value = "";
+    }
+};
 
 
-(async () => {
+(async function () {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    await populateFolderOptions();
 
     chrome.scripting.executeScript({
         target: { tabId: tab.id },
@@ -126,4 +211,6 @@ function displaySiteInfo(url, title, thumbnail, description) {
         popupTitle.style.height = `${popupTitle.scrollHeight}px`
     });
 
+    await setupFolderButton();
+    await setupFolderListing();
 })();

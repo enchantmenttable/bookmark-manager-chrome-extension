@@ -1,5 +1,5 @@
 {
-    "name": "Bookmark",
+    "name": "Bookmark Manager",
     "version": "1.0",
     "manifest_version": 3,
     "permissions": [
@@ -13,6 +13,9 @@
     },
     "action": {
         "default_popup": "src/html/popup.html"
+    },
+    "icons" : {
+        "48": "src/images/bookmark-icon.png"
     },
     "commands": {}
 }

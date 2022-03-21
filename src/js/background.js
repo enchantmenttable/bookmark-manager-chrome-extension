@@ -1,49 +1,48 @@
-// chrome.runtime.onInstalled.addListener(() => {
-//     chrome.storage.local.clear(() => { });
-// })
-
-chrome.runtime.onInstalled.addListener( function () {
-    // chrome.storage.local.set({ folders: ["Books", "Design", "Backlog"] });
+chrome.runtime.onInstalled.addListener(function () {
     createDatabase();
 })
 
-function createDatabase() {
+function createDatabase() {    
+    const initFolderData = [
+        {name: "Stuff"}
+    ];
+
+    const metadata = {
+        name: "lastSelectedFolder",
+        value: "Stuff"
+    };
+
     const request = indexedDB.open("mainDatabase", 1);
 
     request.onupgradeneeded = function () {
         const db = request.result;
 
-        db.createObjectStore("bookmarks", {keyPath: "url"});
-        db.createObjectStore("folders", {keyPath: "folderName"});
+        const bookmarkStore = db.createObjectStore("bookmarks", {keyPath: "url"});
+        const metadataStore = db.createObjectStore("metadata", {keyPath: "name"});
+        const folderStore = db.createObjectStore("folders", {keyPath: "name"});
 
-        // bookmarkStore.createIndex("title", "title");
-        // // if "title" not presented, won't be able to search by title?
+        bookmarkStore.createIndex("title", "title");
+        bookmarkStore.createIndex("description", "description");
+        bookmarkStore.createIndex("displayDomain", "displayDomain");
+        bookmarkStore.createIndex("folder", "folder");
 
-        // bookmarkStore.createIndex("thumbnail", "thumbnail");
-        // // keypath ["a", "b"] then can search with either .get("a") or .get("b")?
+        metadataStore.createIndex("name", "name");
 
-        // bookmarkStore.createIndex("description", "description");
-        // bookmarkStore.createIndex("dateAdded", "dateAdded");
-        // bookmarkStore.createIndex("folder", "folder");
+        folderStore.createIndex("folder", "folder");
 
     };
 
     request.onsuccess = function () {
         const db = request.result;
+        
+        const foldersStore = db.transaction("folders", "readwrite").objectStore("folders");
 
-        const transaction = db.transaction("folders", "readwrite");
+        const metadataStore = db.transaction("metadata", "readwrite").objectStore("metadata");
+        
+        for (const entry of initFolderData) {
+            foldersStore.put(entry)
+        };
 
-        const folderStore = transaction.objectStore("folders");
-
-        folderStore.put({folderName: "Yeah"});
-        folderStore.put({folderName: "Oh"});
-        folderStore.put({folderName: "Oh Yeah"});
-
-        transaction.oncomplete = function () {
-            db.close();
-        }
+        metadataStore.put(metadata)
     }
 }
-
-
-// https://github.com/mdn/to-do-notifications/blob/gh-pages/scripts/todo.js

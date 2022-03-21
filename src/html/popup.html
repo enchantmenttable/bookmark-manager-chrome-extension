@@ -7,40 +7,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../css/popup.css">
 </head>
 
 
 <body>
-    <div class="container" id="main-content">
+    <div class="container" id="main-panel">
         <div class="row">
-            <div class="col-sm">
+            <div class="col-auto" style="padding-right: 0;">
                 <img src="" alt="" srcset="" id="site-thumbnail">
             </div>
-            <div class="col-sm">
-                <!-- title -->
+            <div class="col">
                 <textarea id="site-title" name="title" rows="1" placeholder="Title" maxlength="250"></textarea>
-
-                <!-- description -->
-                <textarea name="description" id="site-description" cols="30" rows="4" placeholder="Description"
+                <textarea name="description" id="site-description" cols="30" placeholder="Description"
                     maxlength="500"></textarea>
-
-                <!-- folder select -->
-                <!-- <button id="folder-select"></button> -->
-                <p id="folder-dropdown"></p>
-
-                <!-- domain -->
+            </div>
+        </div>
+        <div class="row" style="margin-bottom: 8px;">
+            <div class="col-auto" style="padding-right: 0;">
+                <span style="display: inline-block; width: 64px; text-align: right;">Folder</span>
+            </div>
+            <div class="col">
+                <div id="folder-select">
+                    <span></span>
+                    <i class="bi bi-caret-down-fill" style="font-size: small;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-auto" style="padding-right: 0;">
+                <span style="display: inline-block; width: 64px; text-align: right;">URL</span>
+            </div>
+            <div class="col">
                 <textarea name="url" placeholder="Url" rows="1" id="site-url"></textarea>
             </div>
         </div>
-        <div class="bottom-button-container row">
-            <button id="open-editor">My Bookmarks</button>
-            <button id="save">Save</button>
-            <button id="cancel">Cancel</button>
+        <div class="bottom-button-container row" style="margin-top: 4px; margin-bottom: 16px;">
+            <div class="col" style="padding-left: 88px;">
+                <button id="open-editor">Open My Bookmarks</button>
+            </div>
+            <div class="col-auto">
+                <button id="save">Save</button>
+                <button id="cancel">Cancel</button>
+            </div>
         </div>
     </div>
+    <!-- FOLDER PANEL -->
     <div class="container" id="folder-panel">
-        
+        <button id="back-to-main"><i class="bi bi-arrow-left-short"></i></button>
+        <div id="folder-listing"></div>
+        <hr>
+        <div class="add-folder-container">
+            <button id="add-folder">+ Add Folder</button>
+            <input type="text" id="folder-name-input">
+            <span id="folder-duplicate-alert">Folder already existed. Please choose a different name.</span>
+        </div>
     </div>
     <script src="../vendor/bootstrap.bundle.min.js"></script>
     <script src="../js/popup.js" type="module"></script>
