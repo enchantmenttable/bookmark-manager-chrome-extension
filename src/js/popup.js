@@ -80,7 +80,7 @@ openEditorButton.onclick = function () {
 // save 
 saveButton.onclick = function () {
     const dateAdded = Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date());
-    const folderName = folderSelectButton.querySelector("span").replace(/^\s+|\s+$/g, '');
+    const folderName = folderSelectButton.querySelector("span").textContent.replace(/^\s+|\s+$/g, '');
     const data = {
         url: popupUrl.value,
         title: popupTitle.value,
